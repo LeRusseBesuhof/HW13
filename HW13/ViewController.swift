@@ -9,9 +9,20 @@ final class ViewController: UIViewController {
     
     private lazy var scrollContentView : UIView = {
         .config(view: $0) { [weak self] v in
-            v.backgroundColor = .lightGray
+            v.backgroundColor = .white
             guard let self = self else { return }
-            [self.pageTitleLabel, self.moneyTitle, self.collectionView].forEach { v.addSubview($0) }
+            [
+                self.pageTitleLabel,
+                self.moneyTitle,
+                self.collectionView,
+                self.characteristicTitleLabel,
+                self.tableView,
+                self.startLocationTitleLabel,
+                self.startLocationSegmentedControl,
+                self.tutorialTitleLabel,
+                self.switchControl,
+                self.playButton
+            ].forEach { v.addSubview($0) }
         }
     }(UIView())
     
@@ -25,34 +36,127 @@ final class ViewController: UIViewController {
         font: UIFont.systemFont(ofSize: 20, weight: .thin),
         text: "You have 300$")
     
+    private lazy var origin = CGPoint(x: 10, y: 10)
+    
     private lazy var collectionView : UICollectionView = {
         .config(view: $0) { [weak self] collection in
             guard let self = self else { return }
             collection.dataSource = self
             collection.delegate = self
+            collection.register(ItemCell.self, forCellWithReuseIdentifier: ItemCell.reuseID)
             collection.register(HeaderCell.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader, withReuseIdentifier: HeaderCell.reuseID)
             collection.bouncesVertically = false
             collection.backgroundColor = .clear
-            [boxImage, boxLabel].forEach {
-                collection.addSubview($0)
-            }
+            collection.addSubview(boxView)
         }
     }(UICollectionView(frame: .zero, collectionViewLayout: createCollectionCompositionalLayout()))
     
-    private let collectionData = KitStarterSection.getMockSectionData()
+    internal let collectionData = KitStarterSection.getMockSectionData()
     
-    private let reusableData = HeaderItem.getMockHeaderData()
+    internal let reusableData = HeaderItem.getMockHeaderData()
     
     private lazy var boxImage : UIImageView = AppUIFuncs.createImageView()
     
     private lazy var boxLabel : UILabel = AppUIFuncs.createLabel(alignment: .center, font: UIFont.systemFont(ofSize: 18, weight: .semibold), text: "Inventory")
+    
+    private lazy var boxView : UIView = {
+        .config(view: $0) { [weak self] v in
+            guard let self = self else { return }
+            
+            boxImage.image = UIImage(named: "package")
+            [boxImage, boxLabel].forEach { v.addSubview($0) }
+            NSLayoutConstraint.activate([
+                boxImage.topAnchor.constraint(equalTo: v.topAnchor),
+                boxImage.leadingAnchor.constraint(equalTo: v.leadingAnchor, constant: 10),
+                boxImage.trailingAnchor.constraint(equalTo: v.trailingAnchor, constant: -10),
+                boxImage.bottomAnchor.constraint(equalTo: v.bottomAnchor, constant: -25),
+                
+                boxLabel.topAnchor.constraint(equalTo: boxImage.bottomAnchor, constant: 5),
+                boxLabel.leadingAnchor.constraint(equalTo: boxImage.leadingAnchor),
+                boxLabel.trailingAnchor.constraint(equalTo: boxImage.trailingAnchor),
+                boxLabel.heightAnchor.constraint(equalToConstant: 20),
+                boxLabel.bottomAnchor.constraint(equalTo: v.bottomAnchor)
+            ])
+        }
+    }(UIView())
+    
+    private lazy var characteristicTitleLabel : UILabel = AppUIFuncs.createLabel(alignment: .center, font: UIFont.systemFont(ofSize: 26, weight: .regular), text: "Set up the characteristics:")
+    
+    internal lazy var tableData : [(header: String, items: [TableItem])] = TableItem.getMockData()
+    
+    private lazy var tableView : UITableView = {
+        .config(view: $0) { [weak self] t in
+            guard let self = self else { return }
+            t.register(TableCell.self, forCellReuseIdentifier: TableCell.reuseID)
+            t.dataSource = self
+            t.delegate = self
+            t.separatorStyle = .none
+        }
+    }(UITableView())
+    
+    private lazy var startLocationTitleLabel : UILabel = AppUIFuncs.createLabel(alignment: .center, font: UIFont.systemFont(ofSize: 26, weight: .regular), text: "Choose your start location:")
+    
+    private let segmentedControlImages : [UIImage] = [UIImage(named: "cityscape")!, UIImage(named: "farm")!, UIImage(named: "desert")!]
+    
+    private lazy var startLocationSegmentedControl : UISegmentedControl = { [weak self] s in
+        guard let self = self else { return s }
+        s.translatesAutoresizingMaskIntoConstraints = false
+        s.addTarget(self, action: #selector(segmentedControlAction(sender: )), for: .valueChanged)
+        for i in 0..<segmentedControlImages.count {
+            s.insertSegment(with: segmentedControlImages[i], at: i, animated: true)
+        }
+        s.layer.borderWidth = 1.0
+        s.layer.borderColor = UIColor.lightGray.cgColor
+        s.selectedSegmentTintColor = .appSegmented
+        s.selectedSegmentIndex = 1
+        return s
+    }(UISegmentedControl())
+    
+    @objc
+    private func segmentedControlAction(sender: UISegmentedControl) {
+        switch sender.selectedSegmentIndex {
+        case 0: print("You will spawn in the city")
+        case 1: print("You will spawn in the village")
+        default: print("You will spawn in the desert")
+        }
+    }
+    
+    private lazy var tutorialTitleLabel : UILabel = AppUIFuncs.createLabel(alignment: .left, font: UIFont.systemFont(ofSize: 26, weight: .regular), text: "Tutorial:")
+    
+    private lazy var switchControl : UISwitch = { [weak self] s in
+        guard let self = self else { return s }
+        s.translatesAutoresizingMaskIntoConstraints = false
+        s.setOn(false, animated: true)
+        s.addTarget(self, action: #selector(switchAction(sender: )), for: .valueChanged)
+        s.onTintColor = .black
+        s.thumbTintColor = .white
+        return s
+    }(UISwitch())
+    
+    @objc
+    private func switchAction(sender: UISwitch) {
+        switch sender.isOn {
+        case true: print("tutorial is ON")
+        default: print("tutorial is OFF")
+        }
+    }
+    
+    private lazy var playButton : UIButton = {
+        $0.translatesAutoresizingMaskIntoConstraints = false
+        $0.setTitle("Play", for: .normal)
+        $0.setTitleColor(.black, for: .normal)
+        $0.titleLabel?.font = .systemFont(ofSize: 26, weight: .semibold)
+        $0.layer.cornerRadius = 30
+        $0.backgroundColor = .appGreen
+        return $0
+    }(UIButton(primaryAction: UIAction(handler: { _ in
+        print("play the game")
+    })))
      
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .appWhite
         view.addSubview(scrollView)
-        
-        boxImage.image = UIImage(named: "package")
         
         activateConstraints()
     }
@@ -76,91 +180,65 @@ final class ViewController: UIViewController {
             collectionView.topAnchor.constraint(equalTo: moneyTitle.bottomAnchor, constant: 30),
             collectionView.leadingAnchor.constraint(equalTo: scrollContentView.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: scrollContentView.trailingAnchor),
-            collectionView.heightAnchor.constraint(equalToConstant: 650),
+            collectionView.heightAnchor.constraint(equalToConstant: 800),
             
-            boxImage.topAnchor.constraint(equalTo: collectionView.topAnchor, constant: 520),
-            boxImage.centerXAnchor.constraint(equalTo: collectionView.centerXAnchor),
-            boxImage.widthAnchor.constraint(equalToConstant: 100),
-            boxImage.heightAnchor.constraint(equalToConstant: 100),
+            boxView.topAnchor.constraint(equalTo: collectionView.topAnchor, constant: 520),
+            boxView.centerXAnchor.constraint(equalTo: collectionView.centerXAnchor),
+            boxView.widthAnchor.constraint(equalToConstant: 140),
+            boxView.heightAnchor.constraint(equalTo: boxView.widthAnchor),
             
-            boxLabel.topAnchor.constraint(equalTo: boxImage.bottomAnchor),
-            boxLabel.leadingAnchor.constraint(equalTo: boxImage.leadingAnchor),
-            boxLabel.trailingAnchor.constraint(equalTo: boxImage.trailingAnchor),
+            characteristicTitleLabel.topAnchor.constraint(equalTo: boxView.bottomAnchor, constant: 30),
+            characteristicTitleLabel.leadingAnchor.constraint(equalTo: pageTitleLabel.leadingAnchor),
+            characteristicTitleLabel.trailingAnchor.constraint(equalTo: pageTitleLabel.trailingAnchor),
             
-            boxLabel.bottomAnchor.constraint(equalTo: scrollContentView.bottomAnchor)
+            tableView.topAnchor.constraint(equalTo: characteristicTitleLabel.bottomAnchor),
+            tableView.leadingAnchor.constraint(equalTo: pageTitleLabel.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: pageTitleLabel.trailingAnchor),
+            tableView.heightAnchor.constraint(equalToConstant: 330),
+            
+            startLocationTitleLabel.topAnchor.constraint(equalTo: tableView.bottomAnchor, constant: 30),
+            startLocationTitleLabel.leadingAnchor.constraint(equalTo: pageTitleLabel.leadingAnchor),
+            startLocationTitleLabel.trailingAnchor.constraint(equalTo: pageTitleLabel.trailingAnchor),
+            
+            startLocationSegmentedControl.topAnchor.constraint(equalTo: startLocationTitleLabel.bottomAnchor, constant: 30),
+            startLocationSegmentedControl.leadingAnchor.constraint(equalTo: pageTitleLabel.leadingAnchor),
+            startLocationSegmentedControl.trailingAnchor.constraint(equalTo: pageTitleLabel.trailingAnchor),
+            startLocationSegmentedControl.heightAnchor.constraint(equalToConstant: 40),
+            
+            tutorialTitleLabel.topAnchor.constraint(equalTo: startLocationSegmentedControl.bottomAnchor, constant: 30),
+            tutorialTitleLabel.leadingAnchor.constraint(equalTo: pageTitleLabel.leadingAnchor, constant: 17),
+            tutorialTitleLabel.trailingAnchor.constraint(equalTo: scrollContentView.centerXAnchor),
+            
+            switchControl.topAnchor.constraint(equalTo: tutorialTitleLabel.topAnchor),
+            switchControl.leadingAnchor.constraint(equalTo: scrollContentView.centerXAnchor),
+            switchControl.trailingAnchor.constraint(equalTo: pageTitleLabel.trailingAnchor),
+            
+            playButton.topAnchor.constraint(equalTo: switchControl.bottomAnchor, constant: 30),
+            playButton.centerXAnchor.constraint(equalTo: scrollContentView.centerXAnchor),
+            playButton.widthAnchor.constraint(equalToConstant: 180),
+            playButton.heightAnchor.constraint(equalToConstant: 80),
+            playButton.bottomAnchor.constraint(equalTo: scrollContentView.bottomAnchor, constant: -30)
         ])
     }
-}
+    
+    @objc
+    func panGest(sender: UIPanGestureRecognizer) {
+        guard let panView = sender.view else { return }
 
-extension ViewController : UICollectionViewDataSource {
-    
-    func numberOfSections(in collectionView: UICollectionView) -> Int {
-        collectionData.count
-    }
-    
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        collectionData[section].group.count
-    }
-    
-    
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let item = collectionData[indexPath.section].group[indexPath.item]
-        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: ItemCell.reuseID, for: indexPath) as? ItemCell else { return UICollectionViewCell() }
-        cell.backgroundColor = .yellow
-        cell.setUpCell(from: item)
-        return cell
-    }
-}
-
-extension ViewController : UICollectionViewDelegate {
-    func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView {
+        let newOrigin = sender.translation(in: view)
         
-        let item = reusableData[indexPath.section]
-        guard let cell = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: HeaderCell.reuseID, for: indexPath) as? HeaderCell else { return UICollectionReusableView() }
-        cell.setUpHeader(from: item)
-        return cell
-    }
-}
-
-extension ViewController {
-    private func createCollectionCompositionalLayout() -> UICollectionViewCompositionalLayout {
-        
-        return UICollectionViewCompositionalLayout(sectionProvider: { section, _ in
-            switch section {
-            case 3:
-                let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1), heightDimension: .absolute(140))
-                let item = NSCollectionLayoutItem(layoutSize: itemSize)
-                
-                let groupSize = NSCollectionLayoutSize(widthDimension: .absolute(120), heightDimension: .fractionalHeight(1))
-                let group = NSCollectionLayoutGroup.vertical(layoutSize: groupSize, repeatingSubitem: item, count: 1)
-                
-                let section = NSCollectionLayoutSection(group: group)
-                section.orthogonalScrollingBehavior = .groupPagingCentered
-                section.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 30, bottom: 0, trailing: 30)
-                return section
-                
-            default:
-                let itemSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1), heightDimension: .fractionalHeight(1))
-                let item = NSCollectionLayoutItem(layoutSize: itemSize)
-                
-                let groupSize = NSCollectionLayoutSize(widthDimension: .absolute(140), heightDimension: .absolute(120))
-                let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, repeatingSubitem: item, count: 1)
-                group.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 30)
-
-                let section = NSCollectionLayoutSection(group: group)
-                section.contentInsets = NSDirectionalEdgeInsets(top: 30, leading: 30, bottom: 20, trailing: 0)
-                section.orthogonalScrollingBehavior = .continuous
-                section.boundarySupplementaryItems = [self.createHeaderSize()]
-                return section
+        panView.center = CGPoint(x: panView.center.x + newOrigin.x, y: panView.center.y + newOrigin.y)
+        sender.setTranslation(.zero, in: view)
+        switch sender.state {
+        case .ended:
+            UIView.animate(withDuration: 0.5) { [weak self] in
+                guard let self = self else { return }
+                panView.frame.origin = self.origin
             }
-        })
-    }
-    
-    private func createHeaderSize() -> NSCollectionLayoutBoundarySupplementaryItem {
-        
-        let headerSize = NSCollectionLayoutBoundarySupplementaryItem(
-            layoutSize: NSCollectionLayoutSize(widthDimension: .fractionalWidth(1), heightDimension: .absolute(0)), elementKind: UICollectionView.elementKindSectionHeader, alignment: .top)
-        return headerSize
+//            if panView.frame.intersects(boxView.frame) {
+//                print("delete view")
+//            }
+        default: break
+        }
     }
 }
-

@@ -1,6 +1,6 @@
 import Foundation
 
-struct KitStarter : Identifiable {
+struct KitStarterItem : Identifiable {
     var id : String = UUID().uuidString
     let image : String
     let itemName : String

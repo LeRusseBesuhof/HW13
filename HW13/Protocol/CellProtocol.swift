@@ -1,8 +1,7 @@
-//
-//  CellProtocol.swift
-//  HW13
-//
-//  Created by Павел Градов on 12.05.2024.
-//
-
 import Foundation
+import UIKit
+
+protocol CellProtocol {
+    static var reuseID : String { get }
+    var label : UILabel! { get }
+}
